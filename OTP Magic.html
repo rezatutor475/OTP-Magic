@@ -1,242 +1,241 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure OTP Input</title>
-    <style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OTP Auto-Fill Feature</title>
+  <style>
     body {
-        font-family: Arial, sans-serif;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        background-color: #eef2f7;
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
     }
-    .otp-container {
-        text-align: center;
-        background: white;
-        padding: 25px;
-        border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        position: relative;
+    .container {
+      background: #fff;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      text-align: center;
     }
     .otp-input {
-        width: 45px;
-        height: 55px;
-        margin: 5px;
-        text-align: center;
-        font-size: 24px;
-        border: 2px solid #bbb;
-        border-radius: 6px;
-        transition: all 0.3s ease-in-out;
-        position: relative;
+      width: 2.5rem;
+      height: 2.5rem;
+      font-size: 1.5rem;
+      text-align: center;
+      margin: 0 0.3rem;
+      border: 1px solid #ccc;
+      border-radius: 5px;
     }
     .otp-input:focus {
-        border-color: #007BFF;
-        box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
-        outline: none;
+      outline: 2px solid #007bff;
     }
     .tooltip {
-        visibility: hidden;
-        background-color: #333;
-        color: #fff;
-        text-align: center;
-        padding: 5px;
-        border-radius: 6px;
-        position: absolute;
-        bottom: 70px;
-        left: 50%;
-        transform: translateX(-50%);
-        white-space: nowrap;
-        font-size: 12px;
+      position: relative;
+      display: inline-block;
     }
-    .otp-input:hover + .tooltip, .otp-input:focus + .tooltip {
-        visibility: visible;
+    .tooltip .tooltiptext {
+      visibility: hidden;
+      width: 200px;
+      background-color: #333;
+      color: #fff;
+      text-align: center;
+      border-radius: 6px;
+      padding: 5px;
+      position: absolute;
+      z-index: 1;
+      bottom: 125%;
+      left: 50%;
+      margin-left: -100px;
+      opacity: 0;
+      transition: opacity 0.3s;
     }
-    .character-counter {
-        font-size: 12px;
-        color: #777;
-        margin-top: 5px;
-    }
-    .error-message {
-        color: red;
-        font-size: 14px;
-        margin-top: 10px;
-        display: none;
-    }
-    .resend-btn, .copy-btn, .show-otp-btn {
-        margin-top: 15px;
-        background-color: #007BFF;
-        color: white;
-        padding: 10px 15px;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        transition: 0.3s;
-    }
-    .resend-btn:disabled {
-        background-color: #ccc;
-        cursor: not-allowed;
+    .tooltip:hover .tooltiptext {
+      visibility: visible;
+      opacity: 1;
     }
     .loader {
-        display: none;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        border: 5px solid #f3f3f3;
-        border-top: 5px solid #007BFF;
-        border-radius: 50%;
-        width: 50px;
-        height: 50px;
-        animation: spin 1s linear infinite;
+      display: none;
+      border: 4px solid #f3f3f3;
+      border-radius: 50%;
+      border-top: 4px solid #007bff;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      margin: 1rem auto;
     }
     @keyframes spin {
-        0% { transform: translate(-50%, -50%) rotate(0deg); }
-        100% { transform: translate(-50%, -50%) rotate(360deg); }
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
-</style>
+    .resend {
+      color: #007bff;
+      cursor: pointer;
+    }
+    .disabled {
+      pointer-events: none;
+      color: grey;
+    }
+    .success-message {
+      color: green;
+      margin-top: 10px;
+      display: none;
+    }
+    .error-message {
+      color: red;
+      margin-top: 10px;
+      display: none;
+    }
+  </style>
 </head>
 <body>
-    <div class="otp-container">
-        <h2>Enter OTP</h2>
-        <div>
-            <input type="text" class="otp-input" maxlength="1" autofocus>
-            <span class="tooltip">Enter a single digit</span>
-            <input type="text" class="otp-input" maxlength="1">
-            <span class="tooltip">Enter a single digit</span>
-            <input type="text" class="otp-input" maxlength="1">
-            <span class="tooltip">Enter a single digit</span>
-            <input type="text" class="otp-input" maxlength="1">
-            <span class="tooltip">Enter a single digit</span>
-            <input type="text" class="otp-input" maxlength="1">
-            <span class="tooltip">Enter a single digit</span>
-            <input type="text" class="otp-input" maxlength="1">
-            <span class="tooltip">Enter a single digit</span>
-        </div>
-        <div class="character-counter">0/6</div>
-        <button id="submit-btn">Verify OTP</button>
-        <button id="copy-btn" class="copy-btn">Copy OTP</button>
-        <button id="show-otp-btn" class="show-otp-btn">Show OTP</button>
-        <div class="error-message" id="error-msg">Invalid OTP, please try again.</div>
-        <button id="resend-btn" class="resend-btn" disabled>Resend OTP (30s)</button>
-        <div class="loader" id="loader"></div>
+  <div class="container">
+    <h2>Verify OTP</h2>
+    <div class="tooltip">
+      <p>Enter the 6-digit code sent to your phone/email.</p>
+      <span class="tooltiptext">The code will auto-fill if permissions are granted</span>
     </div>
-    <script>
-    document.addEventListener("DOMContentLoaded", () => {
-    const submitBtn = document.getElementById("submit-btn");
-    const loader = document.getElementById("loader");
-    const errorMsg = document.getElementById("error-msg");
-    const resendBtn = document.getElementById("resend-btn");
-    const copyBtn = document.getElementById("copy-btn");
-    const showOtpBtn = document.getElementById("show-otp-btn");
-    const inputs = document.querySelectorAll(".otp-input");
-    const characterCounter = document.querySelector(".character-counter");
-    let correctOTP = "123456";
-    let timer = 30;
-    let interval;
-    let isMasked = true;
+    <form id="otp-form" autocomplete="one-time-code">
+      <div id="otp-fields">
+        <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-input" maxlength="1" />
+        <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-input" maxlength="1" />
+        <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-input" maxlength="1" />
+        <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-input" maxlength="1" />
+        <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-input" maxlength="1" />
+        <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-input" maxlength="1" />
+      </div>
+    </form>
+    <div class="loader" id="loader"></div>
+    <p id="timer">OTP expires in: <span id="countdown">30</span>s</p>
+    <p class="resend disabled" id="resendBtn">Resend Code</p>
+    <p class="success-message" id="successMsg">OTP Verified Successfully!</p>
+    <p class="error-message" id="errorMsg">Invalid OTP. Please try again.</p>
+  </div>
 
-    function updateCounter() {
-        let filledCount = [...inputs].filter(input => input.value !== "").length;
-        characterCounter.textContent = `${filledCount}/6`;
+  <script>
+    const inputs = document.querySelectorAll('.otp-input');
+    const countdown = document.getElementById('countdown');
+    const resendBtn = document.getElementById('resendBtn');
+    const loader = document.getElementById('loader');
+    const successMsg = document.getElementById('successMsg');
+    const errorMsg = document.getElementById('errorMsg');
+    let timer;
+    let timeLeft = 30;
+
+    function generateOTP() {
+      return Array.from({ length: 6 }, () => Math.floor(Math.random() * 10)).join('');
     }
 
-    inputs.forEach((input, index) => {
-        input.addEventListener("input", (e) => {
-            if (e.target.value.length === 1 && index < inputs.length - 1) {
-                inputs[index + 1].focus();
-            }
-            updateCounter();
-        });
-    });
-
-    function maskOTP() {
-        inputs.forEach(input => {
-            input.type = isMasked ? "password" : "text";
-        });
+    function decryptOTP(encrypted) {
+      try {
+        const bytes = CryptoJS.AES.decrypt(encrypted, 'secret-key');
+        return bytes.toString(CryptoJS.enc.Utf8);
+      } catch {
+        return '';
+      }
     }
 
-    showOtpBtn.addEventListener("click", () => {
-        isMasked = !isMasked;
-        maskOTP();
-        showOtpBtn.textContent = isMasked ? "Show OTP" : "Hide OTP";
-    });
-
-    submitBtn.addEventListener("click", () => {
-        loader.style.display = "block";
-        submitBtn.disabled = true;
-        errorMsg.style.display = "none";
-        
-        setTimeout(() => {
-            loader.style.display = "none";
-            submitBtn.disabled = false;
-            const enteredOTP = [...inputs].map(input => input.value).join("");
-            if (enteredOTP === correctOTP) {
-                alert("OTP Verified Successfully!");
-                window.location.href = "dashboard.html";
-            } else {
-                errorMsg.style.display = "block";
-            }
-        }, 2000);
-    });
+    let plainOTP = generateOTP();
+    let encryptedOTP = encryptOTP(plainOTP);
 
     function startResendTimer() {
-        resendBtn.disabled = true;
-        interval = setInterval(() => {
-            timer--;
-            resendBtn.textContent = `Resend OTP (${timer}s)`;
-            if (timer === 0) {
-                clearInterval(interval);
-                resendBtn.disabled = false;
-                resendBtn.textContent = "Resend OTP";
-                timer = 30;
-            }
-        }, 1000);
+      resendBtn.classList.add('disabled');
+      timeLeft = 30;
+      countdown.textContent = timeLeft;
+      timer = setInterval(() => {
+        timeLeft--;
+        countdown.textContent = timeLeft;
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          resendBtn.classList.remove('disabled');
+        }
+      }, 1000);
     }
 
-    resendBtn.addEventListener("click", () => {
-        alert("New OTP Sent!");
-        startResendTimer();
-    });
-
-    copyBtn.addEventListener("click", () => {
-        const otpValue = [...inputs].map(input => input.value).join("");
-        navigator.clipboard.writeText(otpValue).then(() => {
-            alert("OTP copied to clipboard!");
+    function autoFocusOTP() {
+      inputs.forEach((input, idx) => {
+        input.addEventListener('input', () => {
+          if (input.value && idx < inputs.length - 1) {
+            inputs[idx + 1].focus();
+          }
+          validateOTP();
         });
-    });
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Backspace' && !input.value && idx > 0) {
+            inputs[idx - 1].focus();
+          }
+        });
+      });
+    }
 
-    // New Feature: Auto-Fill OTP for Testing Purposes
-    document.addEventListener("keydown", (event) => {
-        if (event.key === "F2") { // Pressing F2 fills the OTP for quick testing
-            inputs.forEach((input, index) => {
-                input.value = correctOTP[index] || "";
-            });
-            updateCounter();
-        }
-    });
+    function maskOTP() {
+      inputs.forEach(input => input.type = 'password');
+    }
 
-    //  OTP Expiry Timer
-    let otpExpiryTimer = 60;
-    const otpExpiryElement = document.createElement("div");
-    otpExpiryElement.classList.add("otp-expiry-timer");
-    otpExpiryElement.textContent = `OTP expires in ${otpExpiryTimer}s`;
-    document.querySelector(".otp-container").appendChild(otpExpiryElement);
-    
-    setInterval(() => {
-        if (otpExpiryTimer > 0) {
-            otpExpiryTimer--;
-            otpExpiryElement.textContent = `OTP expires in ${otpExpiryTimer}s`;
+    function simulateAutoFill(code) {
+      loader.style.display = 'block';
+      successMsg.style.display = 'none';
+      errorMsg.style.display = 'none';
+      setTimeout(() => {
+        loader.style.display = 'none';
+        [...code].forEach((digit, idx) => {
+          if (inputs[idx]) inputs[idx].value = digit;
+        });
+        validateOTP();
+      }, 2000);
+    }
+
+    function getEnteredOTP() {
+      return Array.from(inputs).map(input => input.value).join('');
+    }
+
+    function validateOTP() {
+      const enteredOTP = getEnteredOTP();
+      const decrypted = decryptOTP(encryptedOTP);
+      if (enteredOTP.length === 6) {
+        if (enteredOTP === decrypted) {
+          successMsg.style.display = 'block';
+          errorMsg.style.display = 'none';
         } else {
-            otpExpiryElement.textContent = "OTP expired. Please request a new one.";
+          errorMsg.style.display = 'block';
+          successMsg.style.display = 'none';
         }
-    }, 1000);
+      }
+    }
 
+    if ('OTPCredential' in window) {
+      window.addEventListener('DOMContentLoaded', () => {
+        navigator.credentials.get({ otp: { transport: ['sms'] }, signal: new AbortController().signal })
+          .then(otp => {
+            if (otp && otp.code) {
+              simulateAutoFill(otp.code);
+            }
+          })
+          .catch(err => console.warn('WebOTP not available or failed:', err));
+      });
+    }
+
+    function simulateEmailAutoFill() {
+      setTimeout(() => {
+        simulateAutoFill(decryptOTP(encryptedOTP));
+      }, 4000);
+    }
+
+    resendBtn.addEventListener('click', () => {
+      if (!resendBtn.classList.contains('disabled')) {
+        plainOTP = generateOTP();
+        encryptedOTP = encryptOTP(plainOTP);
+        simulateAutoFill(plainOTP);
+        startResendTimer();
+      }
+    });
+
+    autoFocusOTP();
     maskOTP();
     startResendTimer();
-});
-    </script>
+    simulateEmailAutoFill();
+  </script>
 </body>
 </html>
