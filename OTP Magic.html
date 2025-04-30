@@ -124,21 +124,24 @@
     let timer;
     let timeLeft = 30;
 
-    function generateOTP() {
-      return Array.from({ length: 6 }, () => Math.floor(Math.random() * 10)).join('');
+    function encryptOTP(otp) {
+      return btoa(otp); // Base64 encryption (simple for demo)
     }
 
     function decryptOTP(encrypted) {
       try {
-        const bytes = CryptoJS.AES.decrypt(encrypted, 'secret-key');
-        return bytes.toString(CryptoJS.enc.Utf8);
+        return atob(encrypted);
       } catch {
         return '';
       }
     }
 
-    let plainOTP = generateOTP();
-    let encryptedOTP = encryptOTP(plainOTP);
+    let otpPlain = generateOTP();
+    let encryptedOTP = encryptOTP(otpPlain);
+
+    function generateOTP() {
+      return Array.from({ length: 6 }, () => Math.floor(Math.random() * 10)).join('');
+    }
 
     function startResendTimer() {
       resendBtn.classList.add('disabled');
