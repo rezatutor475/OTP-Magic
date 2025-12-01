@@ -1,244 +1,337 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>OTP Auto-Fill Feature</title>
+  <title>OTP Verification – Secure & Production Ready</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #f4f4f4;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f7f9fc;
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
+      min-height: 100vh;
+      margin: 0;
+      padding: 1rem;
+      box-sizing: border-box;
     }
     .container {
       background: #fff;
-      padding: 2rem;
-      border-radius: 12px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      padding: 2.5rem 2rem;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
       text-align: center;
+      max-width: 420px;
+      width: 100%;
     }
-    .otp-input {
-      width: 2.5rem;
-      height: 2.5rem;
-      font-size: 1.5rem;
-      text-align: center;
-      margin: 0 0.3rem;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-    .otp-input:focus {
-      outline: 2px solid #007bff;
-    }
-    .tooltip {
+    h2 { margin: 0 0 1.5rem; color: #1a1a1a; }
+    .info {
+      color: #555;
+      margin-bottom: 1.5rem;
       position: relative;
       display: inline-block;
     }
-    .tooltip .tooltiptext {
-      visibility: hidden;
-      width: 200px;
-      background-color: #333;
-      color: #fff;
-      text-align: center;
-      border-radius: 6px;
-      padding: 5px;
+    .tooltip {
       position: absolute;
-      z-index: 1;
-      bottom: 125%;
-      left: 50%;
-      margin-left: -100px;
+      top: -45px; left: 50%;
+      transform: translateX(-50%);
+      background: #333;
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      white-space: nowrap;
       opacity: 0;
-      transition: opacity 0.3s;
+      visibility: hidden;
+      transition: all 0.3s;
+      z-index: 10;
     }
-    .tooltip:hover .tooltiptext {
-      visibility: visible;
-      opacity: 1;
+    .info:hover .tooltip { opacity: 1; visibility: visible; top: -55px; }
+    .tooltip::after {
+      content: '';
+      position: absolute;
+      top: 100%; left: 50%;
+      margin-left: -5px;
+      border: 5px solid transparent;
+      border-top-color: #333;
+    }
+    #otp-fields {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 1.5rem 0;
+    }
+    .otp-input {
+      width: 54px;
+      height: 62px;
+      font-size: 2rem;
+      font-weight: bold;
+      text-align: center;
+      border: 2px solid #e1e5e9;
+      border-radius: 12px;
+      transition: all 0.2s;
+      background: #fafafa;
+    }
+    .otp-input:focus {
+      outline: none;
+      border-color: #007bff;
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(0,123,255,0.15);
+    }
+    .otp-input.filled { border-color: #007bff; }
+    .otp-input:disabled {
+      background: #f5f5f5;
+      color: #333;
+      opacity: 0.7;
     }
     .loader {
       display: none;
-      border: 4px solid #f3f3f3;
-      border-radius: 50%;
+      width: 40px; height: 40px;
+      border: 4px solid #f0f0f0;
       border-top: 4px solid #007bff;
-      width: 30px;
-      height: 30px;
+      border-radius: 50%;
       animation: spin 1s linear infinite;
-      margin: 1rem auto;
+      margin: 20px auto;
     }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    .resend {
-      color: #007bff;
-      cursor: pointer;
-    }
-    .disabled {
-      pointer-events: none;
-      color: grey;
-    }
-    .success-message {
-      color: green;
-      margin-top: 10px;
-      display: none;
-    }
-    .error-message {
-      color: red;
-      margin-top: 10px;
-      display: none;
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #timer { color: #666; margin: 1rem 0; font-size: 0.95rem; }
+    .resend { color: #007bff; cursor: pointer; font-weight: 500; }
+    .resend.disabled { color: #999; pointer-events: none; }
+
+    .message { margin-top: 1rem; font-weight: bold; font-size: 1.1rem; display: none; }
+    .success-message { color: #28a745; }
+    .error-message { color: #dc3545; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>Verify OTP</h2>
-    <div class="tooltip">
-      <p>Enter the 6-digit code sent to your phone/email.</p>
-      <span class="tooltiptext">The code will auto-fill if permissions are granted</span>
-    </div>
-    <form id="otp-form" autocomplete="one-time-code">
-      <div id="otp-fields">
-        <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-input" maxlength="1" />
-        <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-input" maxlength="1" />
-        <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-input" maxlength="1" />
-        <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-input" maxlength="1" />
-        <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-input" maxlength="1" />
-        <input type="text" inputmode="numeric" pattern="[0-9]*" class="otp-input" maxlength="1" />
-      </div>
+    <h2>Enter Verification Code</h2>
+    <p class="info">
+      We've sent a 6-digit code to your phone
+      <span class="tooltip">It may auto-fill on supported devices</span>
+    </p>
+
+    <form id="otp-form" autocomplete="one-time-code" novalidate>
+      <div id="otp-fields"></div>
     </form>
+
     <div class="loader" id="loader"></div>
-    <p id="timer">OTP expires in: <span id="countdown">30</span>s</p>
-    <p class="resend disabled" id="resendBtn">Resend Code</p>
-    <p class="success-message" id="successMsg">OTP Verified Successfully!</p>
-    <p class="error-message" id="errorMsg">Invalid OTP. Please try again.</p>
+
+    <p id="timer">Time remaining: <strong id="countdown">30</strong>s</p>
+    <p class="resend disabled" id="resendBtn">Resend code</p>
+
+    <p class="message success-message" id="successMsg">✓ Verified successfully!</p>
+    <p class="message error-message" id="errorMsg">✗ Invalid or expired code</p>
   </div>
 
   <script>
-    const inputs = document.querySelectorAll('.otp-input');
-    const countdown = document.getElementById('countdown');
+    const OTP_LENGTH = 6;
+    const RESEND_DELAY = 30;
+
+    const fieldsContainer = document.getElementById('otp-fields');
+    const countdownEl = document.getElementById('countdown');
+    const timerEl = document.getElementById('timer');
     const resendBtn = document.getElementById('resendBtn');
     const loader = document.getElementById('loader');
     const successMsg = document.getElementById('successMsg');
     const errorMsg = document.getElementById('errorMsg');
-    let timer;
-    let timeLeft = 30;
 
-    function encryptOTP(otp) {
-      return btoa(otp); // Base64 encryption (simple for demo)
-    }
+    let inputs = [];
+    let currentOTP = '';
+    let timerInterval = null;
+    let isVerified = false;
 
-    function decryptOTP(encrypted) {
-      try {
-        return atob(encrypted);
-      } catch {
-        return '';
+    // ایجاد فیلدهای ورودی
+    function createInputs() {
+      fieldsContainer.innerHTML = '';
+      inputs = [];
+      for (let i = 0; i < OTP_LENGTH; i++) {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.inputMode = 'numeric';
+        input.pattern = '[0-9]*';
+        input.maxLength = 1;
+        input.className = 'otp-input';
+        input.autocomplete = 'one-time-code';
+        input.required = true;
+        fieldsContainer.appendChild(input);
+        inputs.push(input);
       }
     }
 
-    let otpPlain = generateOTP();
-    let encryptedOTP = encryptOTP(otpPlain);
-
     function generateOTP() {
-      return Array.from({ length: 6 }, () => Math.floor(Math.random() * 10)).join('');
+      return Math.floor(100000 + Math.random() * 900000).toString();
     }
 
-    function startResendTimer() {
+    function startTimer() {
+      let seconds = RESEND_DELAY;
+      clearInterval(timerInterval);
       resendBtn.classList.add('disabled');
-      timeLeft = 30;
-      countdown.textContent = timeLeft;
-      timer = setInterval(() => {
-        timeLeft--;
-        countdown.textContent = timeLeft;
-        if (timeLeft <= 0) {
-          clearInterval(timer);
+      timerEl.style.display = 'block';
+
+      timerInterval = setInterval(() => {
+        seconds--;
+        countdownEl.textContent = seconds;
+        if (seconds <= 0) {
+          clearInterval(timerInterval);
           resendBtn.classList.remove('disabled');
+          timerEl.style.display = 'none';
         }
       }, 1000);
     }
 
-    function autoFocusOTP() {
-      inputs.forEach((input, idx) => {
-        input.addEventListener('input', () => {
-          if (input.value && idx < inputs.length - 1) {
-            inputs[idx + 1].focus();
-          }
-          validateOTP();
-        });
-        input.addEventListener('keydown', (e) => {
-          if (e.key === 'Backspace' && !input.value && idx > 0) {
-            inputs[idx - 1].focus();
-          }
-        });
+    function getEnteredOTP() {
+      return inputs.map(input => input.value.trim()).join('');
+    }
+
+    function disableInputs() {
+      inputs.forEach(input => {
+        input.disabled = true;
+        input.tabIndex = -1;
       });
     }
 
-    function maskOTP() {
-      inputs.forEach(input => input.type = 'password');
-    }
+    function validateAndSubmit() {
+      if (isVerified) return;
+      const entered = getEnteredOTP();
+      if (entered.length !== OTP_LENGTH) return;
 
-    function simulateAutoFill(code) {
       loader.style.display = 'block';
-      successMsg.style.display = 'none';
-      errorMsg.style.display = 'none';
-      setTimeout(() => {
+      hideMessages();
+
+      setTimeout(() => { // شبیه‌سازی تأخیر شبکه
         loader.style.display = 'none';
-        [...code].forEach((digit, idx) => {
-          if (inputs[idx]) inputs[idx].value = digit;
-        });
-        validateOTP();
-      }, 2000);
-    }
-
-    function getEnteredOTP() {
-      return Array.from(inputs).map(input => input.value).join('');
-    }
-
-    function validateOTP() {
-      const enteredOTP = getEnteredOTP();
-      const decrypted = decryptOTP(encryptedOTP);
-      if (enteredOTP.length === 6) {
-        if (enteredOTP === decrypted) {
+        if (entered === currentOTP) {
           successMsg.style.display = 'block';
-          errorMsg.style.display = 'none';
+          isVerified = true;
+          disableInputs();
+          clearInterval(timerInterval);
+          timerEl.style.display = 'none';
         } else {
           errorMsg.style.display = 'block';
-          successMsg.style.display = 'none';
+          inputs.forEach(input => input.classList.add('shake'));
+          setTimeout(() => inputs.forEach(input => input.classList.remove('shake')), 500);
         }
+      }, 800);
+    }
+
+    function hideMessages() {
+      successMsg.style.display = 'none';
+      errorMsg.style.display = 'none';
+    }
+
+    function resetForm() {
+      isVerified = false;
+      hideMessages();
+      inputs.forEach(input => {
+        input.value = '';
+        input.disabled = false;
+        input.tabIndex = 0;
+        input.classList.remove('filled');
+      });
+      inputs[0].focus();
+      currentOTP = generateOTP();
+      startTimer();
+      loader.style.display = 'none';
+
+      // فقط در محیط توسعه
+      if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+        console.log('%cCurrent OTP:', 'color: #28a745; font-size: 14px; font-weight: bold;', currentOTP);
       }
     }
 
-    if ('OTPCredential' in window) {
-      window.addEventListener('DOMContentLoaded', () => {
-        navigator.credentials.get({ otp: { transport: ['sms'] }, signal: new AbortController().signal })
-          .then(otp => {
-            if (otp && otp.code) {
-              simulateAutoFill(otp.code);
+    // رویدادهای ورودی
+    function setupInputEvents() {
+      inputs.forEach((input, index) => {
+        input.addEventListener('input', (e) => {
+          const value = e.target.value.replace(/\D/g, '');
+          e.target.value = value;
+
+          if (value) {
+            e.target.classList.add('filled');
+            if (index < OTP_LENGTH - 1) {
+              inputs[index + 1].focus();
             }
-          })
-          .catch(err => console.warn('WebOTP not available or failed:', err));
+          } else {
+            e.target.classList.remove('filled');
+          }
+          validateAndSubmit();
+        });
+
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Backspace' && !input.value && index > 0) {
+            inputs[index - 1].focus();
+          }
+        });
+
+        input.addEventListener('paste', (e) => {
+          e.preventDefault();
+          const paste = (e.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, OTP_LENGTH);
+          paste.split('').forEach((char, i) => {
+            if (inputs[i]) {
+              inputs[i].value = char;
+              inputs[i].classList.add('filled');
+            }
+          });
+          if (paste.length === OTP_LENGTH) {
+            inputs[OTP_LENGTH - 1].focus();
+          }
+          validateAndSubmit();
+        });
       });
     }
 
-    function simulateEmailAutoFill() {
-      setTimeout(() => {
-        simulateAutoFill(decryptOTP(encryptedOTP));
-      }, 4000);
+    // Web OTP API
+    if ('OTPCredential' in window) {
+      const ac = new AbortController();
+      navigator.credentials.get({
+        otp: { transport: ['sms'] },
+        signal: ac.signal
+      }).then(cred => {
+        if (cred?.code) {
+          const code = cred.code.replace(/\D/g, '').slice(0, OTP_LENGTH);
+          if (code.length === OTP_LENGTH) {
+            code.split('').forEach((digit, i) => {
+              if (inputs[i]) {
+                inputs[i].value = digit;
+                inputs[i].classList.add('filled');
+              }
+            });
+            validateAndSubmit();
+          }
+        }
+      }).catch(() => { /* کاربر اجازه نداد یا پشتیبانی نمی‌شود */ });
+
+      // لغو درخواست پس از 60 ثانیه
+      setTimeout(() => ac.abort(), 60000);
     }
 
+    // دکمه Resend
     resendBtn.addEventListener('click', () => {
-      if (!resendBtn.classList.contains('disabled')) {
-        plainOTP = generateOTP();
-        encryptedOTP = encryptOTP(plainOTP);
-        simulateAutoFill(plainOTP);
-        startResendTimer();
-      }
+      if (resendBtn.classList.contains('disabled')) return;
+      resetForm();
+      // در محیط واقعی: اینجا درخواست به سرور برای ارسال مجدد ارسال می‌شود
+      alert('A new code has been sent! (Demo mode)');
     });
 
-    autoFocusOTP();
-    maskOTP();
-    startResendTimer();
-    simulateEmailAutoFill();
+    // راه‌اندازی اولیه
+    createInputs();
+    setupInputEvents();
+    resetForm();
+
+    // انیمیشن لرزش برای خطا
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        20%, 60% { transform: translateX(-8px); }
+        40%, 80% { transform: translateX(8px); }
+      }
+      .shake { animation: shake 0.5s ease-in-out; }
+    `;
+    document.head.appendChild(style);
   </script>
 </body>
 </html>
